@@ -72,7 +72,7 @@ namespace CjLib
 
     public static float GetAngle(Quaternion q)
     {
-      return 2.0f * Mathf.Acos(q.w);
+      return 2.0f * Mathf.Acos(Mathf.Clamp(q.w, -1.0f, 1.0f));
     }
 
     public static Quaternion Pow(Quaternion q, float exp)
@@ -98,20 +98,27 @@ namespace CjLib
       return Normalize(new Quaternion(q.x + p.x * dt, q.y + p.y * dt, q.z + p.z * dt, q.w + p.w * dt));
     }
 
-    // ------------------------------------------------------------------------
-    // end: basic stuff
-
-
-    // normalized lerp (nlerp)
-    // ------------------------------------------------------------------------
-
-    public static Quaternion Nlerp(Quaternion a, Quaternion b, float t)
+    public static Vector4 ToVector4(Quaternion q)
     {
-      return Normalize(Quaternion.Lerp(a, b, t));
+      return new Vector4(q.x, q.y, q.z, q.w);
+    }
+
+    public static Quaternion FromVector4(Vector4 v, bool normalize = true)
+    {
+      if (normalize)
+      {
+        float magSqr = v.sqrMagnitude;
+        if (magSqr < MathUtil.Epsilon)
+          return Quaternion.identity;
+  
+        v /= Mathf.Sqrt(magSqr);
+      }
+
+      return new Quaternion(v.x, v.y, v.z, v.w);
     }
 
     // ------------------------------------------------------------------------
-    // end: normalized lerp (nlerp)
+    // end: basic stuff
 
 
     // swing-twist decomposition & interpolation
@@ -236,8 +243,8 @@ namespace CjLib
       {
         default:
         case SterpMode.Nlerp:
-          swing = Nlerp(Quaternion.identity, swingFull, tSwing);
-          twist = Nlerp(Quaternion.identity, twistFull, tTwist);
+          swing = Quaternion.Lerp(Quaternion.identity, swingFull, tSwing);
+          twist = Quaternion.Lerp(Quaternion.identity, twistFull, tTwist);
           break;
         case SterpMode.Slerp:
           swing = Quaternion.Slerp(Quaternion.identity, swingFull, tSwing);

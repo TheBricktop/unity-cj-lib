@@ -54,12 +54,15 @@ namespace CjLib
         s_materialPool = new Dictionary<int, Material>();
 
       Material material;
-      if (!s_materialPool.TryGetValue(key, out material))
+      if (!s_materialPool.TryGetValue(key, out material) || material == null)
       {
-        string shaderName =
-          depthTest
-          ? "CjLib/Primitive"
-          : "CjLib/PrimitiveNoZTest";
+        if (material == null)
+          s_materialPool.Remove(key);
+
+        string shaderName = 
+          depthTest 
+            ? "CjLib/Primitive"
+            : "CjLib/PrimitiveNoZTest";
 
         Shader shader = Shader.Find(shaderName);
         if (shader == null)
@@ -132,6 +135,54 @@ namespace CjLib
       materialProperties.SetFloat("_ZBias", s_wireframeZBias);
 
       Graphics.DrawMesh(mesh, Vector3.zero, Quaternion.identity, material, 0, null, 0, materialProperties, false, false, false);
+    }
+
+    public static void DrawArc(Vector3 center, Vector3 from, Vector3 normal, float angle, float radius, int numSegments, Color color, bool depthTest = true)
+    {
+      if (numSegments <= 0)
+        return;
+
+      from.Normalize();
+      from *= radius;
+
+      var aVert = new Vector3[numSegments + 1];
+      aVert[0] = center + from;
+
+      float numSegmentsInv = 1.0f / numSegments;
+      Quaternion rotStep = QuaternionUtil.AxisAngle(normal, angle * numSegmentsInv);
+      Vector3 vec = rotStep * from;
+      for (int i = 1; i <= numSegments; ++i)
+      {
+        aVert[i] = center + vec;
+        vec = rotStep * vec;
+      }
+
+      DrawLineStrip(aVert, color, depthTest);
+    }
+
+    public static void DrawLocator(Vector3 position, Vector3 right, Vector3 up, Vector3 forward, Color rightColor, Color upColor, Color forwardColor, float size = 0.5f)
+    {
+      DrawLine(position, position + right * size, rightColor);
+      DrawLine(position, position + up * size, upColor);
+      DrawLine(position, position + forward * size, forwardColor);
+    }
+
+    public static void DrawLocator(Vector3 position, Vector3 right, Vector3 up, Vector3 forward, float size = 0.5f)
+    {
+      DrawLocator(position, right, up, forward, Color.red, Color.green, Color.blue, size);
+    }
+
+    public static void DrawLocator(Vector3 position, Quaternion rotation, Color rightColor, Color upColor, Color forwardColor, float size = 0.5f)
+    {
+      Vector3 right = rotation * Vector3.right;
+      Vector3 up = rotation * Vector3.up;
+      Vector3 forward = rotation * Vector3.forward;
+      DrawLocator(position, right, up, forward, rightColor, upColor, forwardColor, size);
+    }
+
+    public static void DrawLocator(Vector3 position, Quaternion rotation, float size = 0.5f)
+    {
+      DrawLocator(position, rotation, Color.red, Color.green, Color.blue, size);
     }
 
     // ------------------------------------------------------------------------
@@ -261,7 +312,7 @@ namespace CjLib
 
     public static void DrawCircle(Vector3 center, Vector3 normal, float radius, int numSegments, Color color, bool depthTest = true, Style style = Style.Wireframe)
     {
-      Vector3 normalCrosser = Vector3.Dot(normal, Vector3.up) < 0.5f ? Vector3.up : Vector3.forward;
+      Vector3 normalCrosser = Mathf.Abs(Vector3.Dot(normal, Vector3.up)) < 0.5f ? Vector3.up : Vector3.forward;
       Vector3 tangent = Vector3.Normalize(Vector3.Cross(normalCrosser, normal));
       Quaternion rotation = Quaternion.LookRotation(tangent, normal);
 
@@ -324,7 +375,7 @@ namespace CjLib
 
       Vector3 center = 0.5f * (point0 + point1);
 
-      Vector3 axisYCrosser = Vector3.Dot(axisY.normalized, Vector3.up) < 0.5f ? Vector3.up : Vector3.forward;
+      Vector3 axisYCrosser = Mathf.Abs(Vector3.Dot(axisY.normalized, Vector3.up)) < 0.5f ? Vector3.up : Vector3.forward;
       Vector3 tangent = Vector3.Normalize(Vector3.Cross(axisYCrosser, axisY));
       Quaternion rotation = Quaternion.LookRotation(tangent, axisY);
 
@@ -446,7 +497,7 @@ namespace CjLib
 
       Vector3 center = 0.5f * (point0 + point1);
 
-      Vector3 axisYCrosser = Vector3.Dot(axisY.normalized, Vector3.up) < 0.5f ? Vector3.up : Vector3.forward;
+      Vector3 axisYCrosser = Mathf.Abs(Vector3.Dot(axisY.normalized, Vector3.up)) < 0.5f ? Vector3.up : Vector3.forward;
       Vector3 tangent = Vector3.Normalize(Vector3.Cross(axisYCrosser, axisY));
       Quaternion rotation = Quaternion.LookRotation(tangent, axisY);
 
@@ -535,7 +586,7 @@ namespace CjLib
 
       axisY.Normalize();
 
-      Vector3 axisYCrosser = Vector3.Dot(axisY, Vector3.up) < 0.5f ? Vector3.up : Vector3.forward;
+      Vector3 axisYCrosser = Mathf.Abs(Vector3.Dot(axisY, Vector3.up)) < 0.5f ? Vector3.up : Vector3.forward;
       Vector3 tangent = Vector3.Normalize(Vector3.Cross(axisYCrosser, axisY));
       Quaternion rotation = Quaternion.LookRotation(tangent, axisY);
 
@@ -558,7 +609,7 @@ namespace CjLib
 
       axisY.Normalize();
 
-      Vector3 axisYCrosser = Vector3.Dot(axisY, Vector3.up) < 0.5f ? Vector3.up : Vector3.forward;
+      Vector3 axisYCrosser = Mathf.Abs(Vector3.Dot(axisY, Vector3.up)) < 0.5f ? Vector3.up : Vector3.forward;
       Vector3 tangent = Vector3.Normalize(Vector3.Cross(axisYCrosser, axisY));
       Quaternion rotation = Quaternion.LookRotation(tangent, axisY);
 
